@@ -1,0 +1,4 @@
+# 選用：TETR.IO 螢幕擷取與鍵盤控制（MVP 未啟用，Phase 6 才會安裝）
+opencv-python>=4.9
+mss>=9.0
+pynput>=1.7

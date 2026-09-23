@@ -1,0 +1,41 @@
+# 完整 Reward System（YAML 版）：數值與 docs/07_reward.md 的 reward_config 完全同步
+
+# ---- 存活與消行 ----
+survival_per_step: 0.01
+single: 1.0
+double: 3.0
+triple: 6.0
+tetris: 12.0
+
+# ---- T-Spin ----
+tspin_mini: 4.0
+tspin_single: 8.0
+tspin_double: 14.0
+tspin_triple: 20.0
+
+# ---- 連續技 ----
+combo_bonus_per_level: 0.5
+combo_bonus_cap: 10
+b2b_multiplier: 1.5
+perfect_clear: 30.0
+
+# ---- 生死 ----
+top_out: -20.0
+
+# ---- 垃圾行 ----
+garbage_sent_per_line: 0.4
+garbage_received_per_line: -0.3
+garbage_efficiency: 0.2
+
+# ---- 形狀塑形（dense shaping）----
+new_hole: -0.5
+hole_state: -0.05
+height_state: -0.02
+height_threshold: 12.0
+bumpiness_state: -0.05
+
+# ---- 課程序列：PPO 前段偏存活、後段偏攻擊 ----
+schedule:
+  survival_phase_fraction: 0.2
+  survival_multiplier: 1.5
+  attack_multiplier_late: 1.5

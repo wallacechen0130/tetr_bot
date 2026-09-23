@@ -1,0 +1,54 @@
+# TETR.IO 風格規則表：本檔是引擎規則的唯一真實來源
+name: tetrio-style
+
+board:
+  visible_rows: 20
+  cols: 10
+  buffer_rows: 20
+
+spawn:
+  box_centered: true        # 以 bounding box 置中
+  hold_once_per_piece: true # 每顆新方塊只能 hold 一次
+  allow_180: true
+
+lock_delay:
+  seconds: 0.5
+  max_resets: 15
+
+gravity:
+  cells_per_second: 20.0
+  soft_drop_multiplier: 20.0
+
+rotation:
+  system: srs_plus
+  kicks_180_enabled: true
+  # TETR.IO 的 180 kick 表未完全公開，這裡採用社群常見近似值，
+  # 實作與測試都以本檔為準，未來可直接替換數值而無需改程式碼。
+  kicks_180_approximate: true
+
+attack:
+  single: 0
+  double: 1
+  triple: 2
+  tetris: 4
+  tspin_mini: 0
+  tspin_mini_single: 1
+  tspin_single: 2
+  tspin_mini_double: 1
+  tspin_double: 4
+  tspin_triple: 6
+  perfect_clear: 10
+  b2b_bonus: 1
+  # combo_table[n] = 第 n combo 段（n 從 1 起算）額外送出垃圾行
+  combo_table: [0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5]
+
+garbage:
+  rows_per_batch: 1
+  delay_pieces: 0          # 收到垃圾後延遲幾顆方塊才落下
+  cheese_ratio: 0.0
+  hole_pattern: random     # random | same_hole
+  max_pending: 20
+
+topout:
+  block_out: true          # 新方塊出生位置被佔用即 top out
+  lock_out: false

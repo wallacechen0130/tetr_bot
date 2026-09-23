@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Smoke Test (CPU)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.run_smoke",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Play ASCII (heuristic)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.play_ascii",
+      "args": ["--episodes", "1", "--tier", "Advanced"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Generate Dataset",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "scripts.generate_dataset",
+      "args": ["--episodes", "4", "--workers", "4"],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

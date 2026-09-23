@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.venv*/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# 執行期產物
+logs/
+runs/
+checkpoints/
+models/
+datasets/*/shards/
+datasets/*/data.parquet
+datasets/*/manifest.json
+datasets/*/
+!datasets/README.md
+
+# 保留目錄結構
+!checkpoints/.gitkeep
+!models/.gitkeep
+!logs/.gitkeep

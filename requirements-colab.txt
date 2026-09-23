@@ -1,0 +1,13 @@
+# Google Colab（T4 GPU）用依賴，版本與本機保持一致以確保 checkpoint 相容
+numpy>=2.1
+torch>=2.6
+gymnasium>=1.0
+stable-baselines3>=2.4
+sb3-contrib>=2.4
+PyYAML>=6.0
+pandas>=2.2
+pyarrow>=17
+tqdm>=4.66
+tensorboard>=2.17
+onnx>=1.16
+wandb>=0.17

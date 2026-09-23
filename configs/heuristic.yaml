@@ -1,0 +1,26 @@
+# 啟發式評估權重（Dellacherie 經典權重為骨架，另加現代 Tetris 偏好項）
+name: dellacherie-plus
+weights:
+  landing_height: -4.500158825082766
+  eroded_piece_cells: 3.4181268101392694
+  row_transitions: -3.2178882868487753
+  column_transitions: -9.348695305445199
+  holes: -7.899265427351652
+  well_sums: -3.3855972247263626
+  aggregate_height: -0.40
+  max_height: -0.30
+  bumpiness: -0.18
+  new_holes: -2.00
+  lines_cleared: 1.20
+  tetris_bonus: 6.00
+  tspin_bonus: 8.00
+  perfect_clear_bonus: 25.00
+  combo_bonus: 1.00
+  b2b_bonus: 2.00
+  hold_used_penalty: 0.00
+  garbage_pressure: -0.60
+  attack_bonus: 0.00
+search:
+  default_depth: 1        # 0=貪婪、1=單層、2=次顆方塊、3=beam
+  beam_width: 8
+  depth3_top_k: 5

@@ -1,0 +1,31 @@
+env:
+  env_id: TetrisSurvival-v0
+  n_envs: 8
+  vec: subproc              # subproc | dummy
+  mode: survival
+  opponent_apm: 60.0
+model:
+  network: resnet
+  net_arch: [256, 256]
+  gamma: 0.997
+  learning_rate: 2.5e-4
+  n_steps: 512
+  batch_size: 1024
+  n_epochs: 4
+  clip_range: 0.2
+  ent_coef: 0.01
+  vf_coef: 0.5
+  gae_lambda: 0.95
+  max_grad_norm: 0.5
+train:
+  total_timesteps: 400000
+  seed: 12345
+  mixed_precision: auto      # auto | off | bf16
+  il_warm_start: checkpoints/il/best.pt
+checkpoint:
+  dir: checkpoints/ppo
+  save_freq: 50000
+logging:
+  tensorboard: logs/tensorboard
+  wandb_project: tetrio-ai
+  wandb_mode: offline        # offline | online | disabled

@@ -1,0 +1,26 @@
+# 全域預設設定：載入後會被 CLI 參數覆寫
+seed: 12345
+
+paths:
+  rules: configs/rules_tetrio.yaml
+  reward: configs/reward.yaml
+  difficulty: configs/difficulty.yaml
+  heuristic: configs/heuristic.yaml
+
+env:
+  mode: survival            # survival | 40l | versus
+  visible_rows: 20
+  cols: 10
+  buffer_rows: 20
+  hold_enabled: true
+  next_count: 7
+  time_limit: 120.0         # seconds，Blitz/Survival 模式
+  target_lines: 40          # 40L 模式
+  opponent_apm: 0.0         # versus 模式的腳本對手攻擊率
+  allow_kicked_placements: true
+  max_placements: 80
+
+timing:
+  # 環境本身不做即時模擬，時間模型統一由 DifficultyController 提供
+  # 預設 0.5 秒／顆（約 2 PPS），環境可用 set_piece_time() 覆寫
+  piece_time_default: 0.5

@@ -1,0 +1,24 @@
+data:
+  root: datasets/heuristic-v1
+  val_fraction: 0.1
+  batch_size: 256
+  num_workers: 0
+model:
+  network: resnet
+  board_channels: 2
+  hidden_dim: 256
+  dropout: 0.0
+train:
+  epochs: 30
+  lr: 3.0e-4
+  weight_decay: 1.0e-5
+  label_smoothing: 0.02
+  early_stopping_patience: 5
+  topk_soft_targets: 3
+  grad_clip: 1.0
+checkpoint:
+  dir: checkpoints/il
+  save_best_only: true
+metrics:
+  target_top1: 0.85
+  target_top3: 0.97

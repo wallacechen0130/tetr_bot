@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tetrio-ai"
+version = "0.1.0"
+description = "TETR.IO 風格的 Tetris AI：自建模擬環境、啟發式教師、模仿學習與 PPO 微調"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.1",
+    "torch>=2.6",
+    "gymnasium>=1.0",
+    "stable-baselines3>=2.4",
+    "sb3-contrib>=2.4",
+    "PyYAML>=6.0",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "tqdm>=4.66",
+    "tensorboard>=2.17",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6", "onnx>=1.16"]
+tetrio = ["opencv-python>=4.9", "mss>=9.0", "pynput>=1.7"]
+wandb = ["wandb>=0.17"]
+
+[tool.setuptools]
+packages = { find = { include = ["envs*", "agents*", "policies*", "trainers*", "evaluators*", "controllers*", "integrations*", "datasets*", "scripts*"] } }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+exclude = [".venv", ".venv-mini", "notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# UP042：為了支援 Python 3.11，ClearType 刻意使用 str + Enum 而非 StrEnum
+ignore = ["E501", "B008", "UP042"]

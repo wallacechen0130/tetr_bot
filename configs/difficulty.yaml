@@ -1,0 +1,84 @@
+# 七級難度參數表（docs/04_difficulty_control.md 使用同一份數值）
+defaults:
+  jitter_ms: 25.0            # 反應/思考時間抖動標準差
+  placement_noise_std: 0.0   # 落點分數擾動
+  soft_drop_misuse: 0.0
+
+tiers:
+  Beginner:
+    reaction_ms: 700.0
+    think_ms: 300.0
+    target_pps: 0.5
+    target_apm: 10.0
+    lookahead_depth: 0
+    misplay_chance: 0.35
+    hold_usage: 0.05
+    tspin_preference: 0.0
+    pc_preference: 0.0
+    combo_preference: 0.0
+  Casual:
+    reaction_ms: 450.0
+    think_ms: 250.0
+    target_pps: 0.9
+    target_apm: 20.0
+    lookahead_depth: 1
+    misplay_chance: 0.22
+    hold_usage: 0.15
+    tspin_preference: 0.05
+    pc_preference: 0.05
+    combo_preference: 0.10
+  Intermediate:
+    reaction_ms: 320.0
+    think_ms: 180.0
+    target_pps: 1.4
+    target_apm: 35.0
+    lookahead_depth: 1
+    misplay_chance: 0.12
+    hold_usage: 0.30
+    tspin_preference: 0.15
+    pc_preference: 0.10
+    combo_preference: 0.25
+  Advanced:
+    reaction_ms: 240.0
+    think_ms: 130.0
+    target_pps: 1.9
+    target_apm: 55.0
+    lookahead_depth: 2
+    misplay_chance: 0.06
+    hold_usage: 0.50
+    tspin_preference: 0.30
+    pc_preference: 0.20
+    combo_preference: 0.40
+  Expert:
+    reaction_ms: 180.0
+    think_ms: 90.0
+    target_pps: 2.4
+    target_apm: 80.0
+    lookahead_depth: 2
+    misplay_chance: 0.03
+    hold_usage: 0.65
+    tspin_preference: 0.50
+    pc_preference: 0.35
+    combo_preference: 0.55
+  Professional:
+    reaction_ms: 140.0
+    think_ms: 60.0
+    target_pps: 3.0
+    target_apm: 110.0
+    lookahead_depth: 3
+    misplay_chance: 0.015
+    hold_usage: 0.80
+    tspin_preference: 0.70
+    pc_preference: 0.50
+    combo_preference: 0.70
+  Godlike:
+    reaction_ms: 100.0
+    think_ms: 40.0
+    target_pps: 3.6
+    target_apm: 150.0
+    lookahead_depth: 4
+    misplay_chance: 0.005
+    hold_usage: 0.90
+    tspin_preference: 0.85
+    pc_preference: 0.65
+    combo_preference: 0.85

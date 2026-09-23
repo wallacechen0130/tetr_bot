@@ -1,0 +1,14 @@
+# 本機（Windows / CPU-only）開發與測試用依賴
+numpy>=2.1
+torch>=2.6
+gymnasium>=1.0
+stable-baselines3>=2.4
+sb3-contrib>=2.4
+PyYAML>=6.0
+pandas>=2.2
+pyarrow>=17
+tqdm>=4.66
+tensorboard>=2.17
+pytest>=8.0
+ruff>=0.6
+onnx>=1.16
