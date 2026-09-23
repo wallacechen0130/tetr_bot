@@ -5,15 +5,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import numpy as np
-
 from envs.gym.obs_encoder import VECTOR_DIM
 from policies.factory import build_network
 from trainers.common import ensure_dir
-
-
-class _ExportWrapper:
-    """torch.onnx 匯出用包裝：只吃 (board, vector) 並輸出 masked logits。"""
 
 
 def main() -> None:
@@ -53,16 +47,22 @@ def main() -> None:
     dummy_vector = torch.zeros(args.batch, VECTOR_DIM, dtype=torch.float32)
     target = Path(args.out)
     ensure_dir(target.parent)
-    torch.onnx.export(
-        wrapper,
-        (dummy_board, dummy_vector),
-        str(target),
-        input_names=["board", "vector"],
-        output_names=["logits"],
-        dynamic_axes={"board": {0: "batch"}, "vector": {0: "batch"}, "logits": {0: "batch"}},
-        opset_version=args.opset,
-        do_constant_folding=True,
-    )
+    try:
+        torch.onnx.export(
+            wrapper,
+            (dummy_board, dummy_vector),
+            str(target),
+            input_names=["board", "vector"],
+            output_names=["logits"],
+            dynamic_axes={"board": {0: "batch"}, "vector": {0: "batch"}, "logits": {0: "batch"}},
+            opset_version=args.opset,
+            do_constant_folding=True,
+            dynamo=False,  # 使用 legacy exporter，避免額外需要 onnxscript
+        )
+    except ModuleNotFoundError as exc:  # pragma: no cover - 缺少 onnxscript 時
+        raise SystemExit(
+            f"ONNX 匯出失敗（{exc}）。請先執行：pip install onnxscript，或改用 torch 的 legacy exporter。"
+        ) from exc
     try:
         import onnx
 
@@ -76,7 +76,6 @@ def main() -> None:
     size_kb = target.stat().st_size / 1024
     print(f"[export_onnx] 完成：{target} ({size_kb:.1f} KB)")
     print("提示：推論時請自行對 logits 套用 action mask（-1e9）。")
-    _ = np
 
 
 if __name__ == "__main__":
