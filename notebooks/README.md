@@ -1,5 +1,15 @@
 # Colab Notebooks
 
+## 一頁式（推薦，只需要上傳一個檔案）
+
+| Notebook | 用途 |
+|---|---|
+| `tetrio_ai_all_in_one.ipynb` | 環境 bootstrap → 資料集檢查 → IL（小樣本＋全量）→ PPO → TensorBoard → 評估，全部在一個檔案 |
+
+直接把它拖進 Colab 就能跑；程式碼會自動從 GitHub clone，不需要額外上傳專案。
+
+## 分章版（想單獨重跑某一段時用）
+
 | Notebook | 用途 |
 |---|---|
 | `00_colab_setup.ipynb` | 掛載 Google Drive、安裝依賴、取得程式碼、檢查環境 |

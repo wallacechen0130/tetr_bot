@@ -106,6 +106,10 @@ Heuristic Teacher → Imitation Learning (Board → Action) → PPO Fine-tuning 
 
 ## 文件
 
+想在 Colab 跑訓練的話，直接把 [`notebooks/tetrio_ai_all_in_one.ipynb`](notebooks/tetrio_ai_all_in_one.ipynb)
+上傳到 Colab 即可（單一檔案包含：環境設定 → 資料集檢查 → IL → PPO → TensorBoard → 評估；
+程式碼會自動從 GitHub clone）。分章版 notebook 在 [`notebooks/`](notebooks/README.md)。
+
 完整設計文件在 [`docs/`](docs/00_index.md)：
 
 | 章節 | 連結 |
