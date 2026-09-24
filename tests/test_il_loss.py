@@ -33,7 +33,8 @@ def test_masked_cross_entropy_is_bounded():
 
     loss = masked_cross_entropy(logits, target, mask, label_smoothing=0.02)
     assert torch.isfinite(loss)
-    assert float(loss) < 20.0, f"loss 應該在正常範圍，得到 {float(loss)}"
+    value = float(loss.detach())
+    assert value < 20.0, f"loss 應該在正常範圍，得到 {value}"
 
 
 def test_plain_cross_entropy_on_masked_logits_explodes():
@@ -45,7 +46,8 @@ def test_plain_cross_entropy_on_masked_logits_explodes():
     logits, _ = network(board, vector, mask)
 
     plain = torch.nn.functional.cross_entropy(logits, target, label_smoothing=0.02)
-    assert float(plain) > 1e6, "這是 bug 的行為：plain CE + label smoothing 會被 -1e9 汙染"
+    value = float(plain.detach())
+    assert value > 1e6, "這是 bug 的行為：plain CE + label smoothing 會被 -1e9 汙染"
 
 
 def test_masked_cross_entropy_without_smoothing_matches_torch():

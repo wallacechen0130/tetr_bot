@@ -43,6 +43,15 @@
 **驗證**：`tests/test_env_api.py` 新增 2 項測試（各模式限制不互相汙染、survival 不會在 40 行結束）。
 修正後 survival 局跑滿 120 秒（240 顆、95 行），單局樣本數從 ~100 提升到 240（2.4 倍）。
 
+### Bug 3：`--no-warm-start` 沒有作用
+
+**症狀**：`python -m scripts.train_ppo --no-warm-start` 仍然載入 IL 權重（log 顯示 `IL warm start：95/95`）。
+
+**根因**：CLI 只把 `il_weights` 設成 `None`，但 `PPOTrainer.run()` 在 `il_weights is None` 時
+會回頭讀 `configs/ppo.yaml` 的 `train.il_warm_start`，等於沒有關閉。
+
+**修正**：`scripts/train_ppo.py` 在 `--no-warm-start` 時一併把 config 的 `il_warm_start` 設為 `None`。
+
 ## 已知限制
 
 ### IL top-1 準確率的先天天花板

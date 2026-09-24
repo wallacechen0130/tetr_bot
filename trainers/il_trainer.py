@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from datasets.reader import DatasetReader, TensorDataset, split_indices
+from envs.progress import progress_bar
 from policies.action_heads import masked_cross_entropy, masked_logits
 from policies.factory import build_network, count_parameters
 from trainers.common import ensure_dir, load_checkpoint, resolve_device, save_checkpoint, set_seed
@@ -36,6 +37,7 @@ class ILConfig:
     num_workers: int = 0
     device: str = "auto"
     limit: int | None = None
+    show_progress: bool | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ILConfig:
@@ -203,44 +205,76 @@ class ILTrainer:
         ensure_dir(self.config.checkpoint_dir)
         patience = 0
 
-        for epoch in range(1, epochs + 1):
-            self.model.train()
-            train_loss = 0.0
-            for batch in train_loader:
-                self.optimizer.zero_grad(set_to_none=True)
-                loss, _, _ = self._loss(batch)
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.grad_clip)
-                self.optimizer.step()
-                train_loss += float(loss.item())
-            train_loss /= max(1, len(train_loader))
-
-            metrics = self.evaluate(val_loader)
-            record = {
-                "epoch": float(epoch),
-                "train_loss": train_loss,
-                "val_loss": metrics["val_loss"],
-                "top1": metrics["top1"],
-                "top3": metrics["top3"],
-                "top1_tolerant": metrics["top1_tolerant"],
-            }
-            self.history.append(record)
-
-            if metrics["top1"] > best_top1:
-                best_top1 = metrics["top1"]
-                patience = 0
-                save_checkpoint(
-                    best_path,
-                    model=self.model,
-                    optimizer=self.optimizer,
-                    epoch=epoch,
-                    metrics=record,
-                    extra={"config": self.config.__dict__, "network": self.config.network},
+        epoch_bar = progress_bar(
+            total=epochs,
+            desc="IL 訓練",
+            unit="epoch",
+            enable=self.config.show_progress,
+            position=0,
+            postfix={"best_top1": 0.0},
+        )
+        try:
+            for epoch in range(1, epochs + 1):
+                self.model.train()
+                train_loss = 0.0
+                batch_bar = progress_bar(
+                    total=len(train_loader),
+                    desc=f"  epoch {epoch}/{epochs}",
+                    unit="batch",
+                    enable=self.config.show_progress,
+                    position=1,
+                    leave=False,
                 )
-            else:
-                patience += 1
+                for step, batch in enumerate(train_loader, start=1):
+                    self.optimizer.zero_grad(set_to_none=True)
+                    loss, _, _ = self._loss(batch)
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.config.grad_clip)
+                    self.optimizer.step()
+                    train_loss += float(loss.item())
+                    batch_bar.update(1)
+                    # refresh=False：交給 tqdm 依 mininterval 節流，避免每個 batch 都重畫
+                    batch_bar.set_postfix(loss=f"{train_loss / step:.4f}", refresh=False)
+                batch_bar.close()
+                train_loss /= max(1, len(train_loader))
+
+                metrics = self.evaluate(val_loader)
+                record = {
+                    "epoch": float(epoch),
+                    "train_loss": train_loss,
+                    "val_loss": metrics["val_loss"],
+                    "top1": metrics["top1"],
+                    "top3": metrics["top3"],
+                    "top1_tolerant": metrics["top1_tolerant"],
+                }
+                self.history.append(record)
+
+                if metrics["top1"] > best_top1:
+                    best_top1 = metrics["top1"]
+                    patience = 0
+                    save_checkpoint(
+                        best_path,
+                        model=self.model,
+                        optimizer=self.optimizer,
+                        epoch=epoch,
+                        metrics=record,
+                        extra={"config": self.config.__dict__, "network": self.config.network},
+                    )
+                else:
+                    patience += 1
+
+                epoch_bar.update(1)
+                epoch_bar.set_postfix(
+                    train_loss=f"{train_loss:.3f}",
+                    val_loss=f"{metrics['val_loss']:.3f}",
+                    top1=f"{metrics['top1']:.3f}",
+                    best_top1=f"{best_top1:.3f}",
+                )
                 if patience >= self.config.early_stopping_patience:
+                    epoch_bar.write(f"early stopping：top1 連續 {patience} 個 epoch 未改善")
                     break
+        finally:
+            epoch_bar.close()
 
         return {
             "best_top1": best_top1,

@@ -10,7 +10,12 @@ import numpy as np
 
 from envs.config import resolve_path
 from policies.sb3_extractor import TetrisFeaturesExtractor
-from trainers.callbacks import BestModelCallback, CurriculumCallback, make_wandb_callback
+from trainers.callbacks import (
+    BestModelCallback,
+    CurriculumCallback,
+    TqdmProgressCallback,
+    make_wandb_callback,
+)
 from trainers.common import ensure_dir, set_seed
 
 
@@ -156,6 +161,7 @@ class PPOTrainer:
         resume_from: str | Path | None = None,
         il_weights: str | Path | None = None,
         use_wandb: bool = False,
+        show_progress: bool | None = None,
     ) -> dict[str, Any]:
         from sb3_contrib import MaskablePPO
         from stable_baselines3.common.callbacks import CheckpointCallback
@@ -181,6 +187,7 @@ class PPOTrainer:
             CheckpointCallback(save_freq=save_freq, save_path=str(self.checkpoint_dir), name_prefix="ppo"),
             BestModelCallback(self.checkpoint_dir / "best.zip"),
             CurriculumCallback(),
+            TqdmProgressCallback(enable=show_progress),
         ]
         if use_wandb:
             wandb_callback = make_wandb_callback(
@@ -201,28 +208,44 @@ class PPOTrainer:
         }
 
     # ------------------------------------------------------------------ 評估
-    def evaluate(self, *, episodes: int = 5, deterministic: bool = True) -> dict[str, float]:
+    def evaluate(
+        self,
+        *,
+        episodes: int = 5,
+        deterministic: bool = True,
+        show_progress: bool | None = None,
+    ) -> dict[str, float]:
         """用單一環境跑幾局並回傳平均 reward / 行數。"""
 
         import gymnasium as gym
 
         import envs  # noqa: F401 - 匯入即完成環境註冊
+        from envs.progress import progress_bar
 
         env = gym.make(self.env_id, **self.env_kwargs)
         rewards: list[float] = []
         lines: list[int] = []
-        for episode in range(episodes):
-            observation, info = env.reset(seed=self.seed + episode)
-            done = False
-            total_reward = 0.0
-            while not done:
-                mask = env.unwrapped.action_masks()
-                action, _ = self.model.predict(observation, deterministic=deterministic, action_masks=mask)
-                observation, reward, terminated, truncated, info = env.step(int(action))
-                total_reward += float(reward)
-                done = bool(terminated or truncated)
-            rewards.append(total_reward)
-            lines.append(int(info.get("lines_total", 0)))
+        with progress_bar(
+            total=episodes,
+            desc="評估",
+            unit="episode",
+            enable=show_progress,
+            position=0,
+        ) as bar:
+            for episode in range(episodes):
+                observation, info = env.reset(seed=self.seed + episode)
+                done = False
+                total_reward = 0.0
+                while not done:
+                    mask = env.unwrapped.action_masks()
+                    action, _ = self.model.predict(observation, deterministic=deterministic, action_masks=mask)
+                    observation, reward, terminated, truncated, info = env.step(int(action))
+                    total_reward += float(reward)
+                    done = bool(terminated or truncated)
+                rewards.append(total_reward)
+                lines.append(int(info.get("lines_total", 0)))
+                bar.update(1)
+                bar.set_postfix(rew=f"{np.mean(rewards):.1f}", lines=f"{np.mean(lines):.1f}")
         env.close()
         return {
             "mean_reward": float(np.mean(rewards)),

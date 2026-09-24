@@ -29,6 +29,9 @@ def main() -> None:
         trainer.n_envs = int(args.n_envs)
     if args.vec:
         trainer.vec_type = args.vec
+    if args.no_warm_start:
+        # 注意：只把 il_weights 設成 None 沒用，run() 會回頭吃 config 的 il_warm_start
+        config.setdefault("train", {})["il_warm_start"] = None
     il_weights = None if args.no_warm_start else args.il_weights
     result = trainer.run(
         total_timesteps=args.timesteps,

@@ -37,6 +37,20 @@ py -3.13 -m venv .venv
 | 匯出 ONNX | `python -m scripts.export_onnx --checkpoint checkpoints/il/best.pt` |
 | 與 Google Drive 同步 | `python -m scripts.sync_drive --direction to_drive` |
 
+## 進度與 ETA
+
+資料收集、IL 訓練、PPO 訓練與評估都內建 tqdm 進度條，附**預估剩餘時間（ETA）**：
+
+```text
+收集資料:  42%|█████▍      | 5/12 [00:01<00:02, 3.22episode/s, samples=560, rate=112 sample/s]
+IL 訓練:   50%|█████████▌  | 1/2 [00:03<00:03, 3.42s/epoch, train_loss=4.192, val_loss=3.919, top1=0.153]
+PPO 訓練:  51%|██████      | 1036/2048 [00:18<00:57, 17.49step/s, kl=0.0001487]
+評估:      67%|███████▎    | 2/3 [00:00<00:00, 12.44episode/s, lines=0.0, rew=-54.6]
+```
+
+* 輸出被重導向、在 CI 或 pytest 底下執行時會**自動關閉**，不會汙染日誌。
+* 需要關掉時可加 `--no-progress`：`python -m scripts.train_il --no-progress`。
+
 ## 目前實測結果（本機 i5-13500H / CPU only）
 
 | 項目 | 結果 |

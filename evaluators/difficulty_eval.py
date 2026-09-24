@@ -9,6 +9,7 @@ import numpy as np
 
 from controllers.difficulty import DIFFICULTY_TIERS, DifficultyController
 from controllers.timing import FakeClock
+from envs.progress import progress_bar
 from evaluators.benchmark import BenchmarkRunner
 from evaluators.metrics import aggregate_metrics, difficulty_fidelity
 
@@ -25,26 +26,29 @@ def run_difficulty_suite(
     """對每個等級跑短局，檢查 PPS/APM 是否落在目標附近。"""
 
     results: dict[str, Any] = {"tiers": {}, "fidelity": {}}
-    for offset, tier in enumerate(tiers):
-        clock = FakeClock()
-        controller = DifficultyController(tier, clock=clock, seed=seed + offset, ranker=ranker)
-        runner = BenchmarkRunner(env_factory, agent=controller, controller=controller, seed=seed + offset)
-        episodes_metrics = runner.run(episodes=episodes)
-        summary = aggregate_metrics(episodes_metrics)
-        profile = controller.profile
-        observed_pps = float(summary.get("mean_pps", 0.0))
-        observed_apm = float(summary.get("mean_apm", 0.0))
-        fidelity = difficulty_fidelity(
-            observed_pps=observed_pps,
-            target_pps=profile.target_pps,
-            observed_apm=observed_apm,
-            target_apm=profile.target_apm,
-        )
-        fidelity["tier"] = tier  # type: ignore[assignment]
-        fidelity["mean_lines"] = float(summary.get("mean_lines", 0.0))
-        fidelity["tspin_rate"] = float(summary.get("tspin_rate", 0.0))
-        results["tiers"][tier] = summary
-        results["fidelity"][tier] = fidelity
+    with progress_bar(total=len(tiers), desc="難度保真度", unit="tier", position=0) as bar:
+        for offset, tier in enumerate(tiers):
+            clock = FakeClock()
+            controller = DifficultyController(tier, clock=clock, seed=seed + offset, ranker=ranker)
+            runner = BenchmarkRunner(env_factory, agent=controller, controller=controller, seed=seed + offset)
+            episodes_metrics = runner.run(episodes=episodes)
+            summary = aggregate_metrics(episodes_metrics)
+            profile = controller.profile
+            observed_pps = float(summary.get("mean_pps", 0.0))
+            observed_apm = float(summary.get("mean_apm", 0.0))
+            fidelity = difficulty_fidelity(
+                observed_pps=observed_pps,
+                target_pps=profile.target_pps,
+                observed_apm=observed_apm,
+                target_apm=profile.target_apm,
+            )
+            fidelity["tier"] = tier  # type: ignore[assignment]
+            fidelity["mean_lines"] = float(summary.get("mean_lines", 0.0))
+            fidelity["tspin_rate"] = float(summary.get("tspin_rate", 0.0))
+            results["tiers"][tier] = summary
+            results["fidelity"][tier] = fidelity
+            bar.update(1)
+            bar.set_postfix(tier=tier, pps=f"{observed_pps:.2f}/{profile.target_pps:.2f}")
     results["monotonic_pps"] = bool(
         all(
             results["fidelity"][tiers[index]]["target_pps"]

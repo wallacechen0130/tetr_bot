@@ -41,6 +41,8 @@
 | 預期成果 | `datasets/heuristic-v1/` |
 | 實測 | 2 workers、80 樣本 1.5 秒；每樣本約 0.85 KB |
 
+進度顯示：`收集資料: 42%|█████▍ | 5/12 [00:01<00:02, 3.22episode/s, samples=560, rate=112 sample/s]`（tqdm 提供 ETA）。
+
 規模建議：正式訓練用 20–50 萬樣本（約 170–430 MB npz），以 8 workers 約 15–30 分鐘。
 
 ## Phase 4：Imitation Learning（已完成）
@@ -54,6 +56,8 @@
 | 預期成果 | `checkpoints/il/best.pt` |
 | 驗收門檻 | 29k 樣本：top-1 ≥ 0.45、top-3 ≥ 0.70、top1_tolerant ≥ 0.50（受限於等價標籤，見 [12_known_issues.md](12_known_issues.md)） |
 | 實測 | 28.8k 樣本 / 28 epochs：top-1 **0.485**、top-3 **0.734**、平手容忍 **0.518**（修 bug 前僅 0.151） |
+
+進度顯示：外層 epoch 進度條（含 ETA 與 val 指標）＋內層 batch 進度條（即時 train loss）。
 
 ## Phase 5：PPO Fine-Tuning（已完成程式碼，訓練待放大）
 

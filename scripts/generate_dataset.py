@@ -7,12 +7,14 @@ import multiprocessing as mp
 import os
 import time
 from pathlib import Path
+from queue import Empty as QueueEmpty
 from typing import Any
 
 from agents.heuristic_agent import HeuristicAgent
 from datasets.manifest import DatasetManifest, write_manifest
 from datasets.writer import DatasetWriter, build_sample, write_parquet_from_shards
 from envs.config import resolve_path
+from envs.progress import progress_bar
 
 
 def _play_episode(env: Any, teacher: HeuristicAgent, writer: DatasetWriter, *, seed: int, episode: int, max_pieces: int) -> int:
@@ -60,8 +62,9 @@ def _worker(payload: dict[str, Any]) -> dict[str, Any]:
         generator="heuristic",
     )
     samples = 0
+    progress_queue = payload.get("progress_queue")
     for episode in range(int(payload["episodes"])):
-        samples += _play_episode(
+        episode_samples = _play_episode(
             env,
             teacher,
             writer,
@@ -69,6 +72,10 @@ def _worker(payload: dict[str, Any]) -> dict[str, Any]:
             episode=episode,
             max_pieces=int(payload["max_pieces"]),
         )
+        samples += episode_samples
+        if progress_queue is not None:
+            # 每完成一局回報一次，讓主行程能顯示進度與 ETA
+            progress_queue.put((1, episode_samples))
     manifest = writer.close()
     env.close()
     return {"worker": worker_id, "shards": manifest.shards, "samples": samples}
@@ -87,6 +94,7 @@ def generate(
     piece_time: float = 0.5,
     formats: tuple[str, ...] = ("npz", "parquet"),
     name: str = "heuristic-v1",
+    show_progress: bool | None = None,
 ) -> dict[str, Any]:
     """平行產生資料集並寫出 manifest（可選 parquet）。"""
 
@@ -111,8 +119,45 @@ def generate(
     ]
     started = time.time()
     context = mp.get_context("spawn")
-    with context.Pool(processes=max(1, workers)) as pool:
-        results = pool.map(_worker, payloads)
+    total_episodes = per_worker * max(1, workers)
+    results: list[dict[str, Any]] = []
+    with context.Manager() as manager:
+        progress_queue = manager.Queue()
+        for payload in payloads:
+            payload["progress_queue"] = progress_queue
+        with context.Pool(processes=max(1, workers)) as pool:
+            async_result = pool.map_async(_worker, payloads)
+            episodes_done = 0
+            samples_done = 0
+            with progress_bar(
+                total=total_episodes,
+                desc="收集資料",
+                unit="episode",
+                enable=show_progress,
+                postfix={"samples": 0},
+            ) as bar:
+                while not async_result.ready():
+                    try:
+                        episode_delta, sample_delta = progress_queue.get(timeout=0.2)
+                    except QueueEmpty:
+                        continue
+                    episodes_done += int(episode_delta)
+                    samples_done += int(sample_delta)
+                    bar.update(int(episode_delta))
+                    elapsed = max(time.time() - started, 1e-6)
+                    bar.set_postfix(
+                        samples=samples_done,
+                        rate=f"{samples_done / elapsed:.0f} sample/s",
+                    )
+                while True:  # 清空最後幾筆回報
+                    try:
+                        episode_delta, sample_delta = progress_queue.get_nowait()
+                    except QueueEmpty:
+                        break
+                    episodes_done += int(episode_delta)
+                    samples_done += int(sample_delta)
+                    bar.update(int(episode_delta))
+            results = async_result.get()
 
     shards: list[str] = []
     total = 0
@@ -160,6 +205,7 @@ def main() -> None:
     parser.add_argument("--max-pieces", type=int, default=200)
     parser.add_argument("--shard-size", type=int, default=5000)
     parser.add_argument("--formats", default="npz,parquet")
+    parser.add_argument("--no-progress", action="store_true", help="關閉進度條")
     args = parser.parse_args()
 
     summary = generate(
@@ -172,6 +218,7 @@ def main() -> None:
         max_pieces=args.max_pieces,
         shard_size=args.shard_size,
         formats=tuple(part.strip() for part in args.formats.split(",") if part.strip()),
+        show_progress=False if args.no_progress else None,
     )
     print("[generate_dataset] 完成：")
     for key, value in summary.items():

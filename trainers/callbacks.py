@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 from stable_baselines3.common.callbacks import BaseCallback
 
+from envs.progress import progress_bar
 from trainers.common import ensure_dir
 
 
@@ -71,3 +72,66 @@ def make_wandb_callback(project: str = "tetrio-ai", mode: str = "offline") -> An
     except Exception:  # pragma: no cover - wandb 為可選依賴
         return None
     return WandbCallback(gradient_save_freq=1000, model_save_path=None, verbose=0)
+
+
+class TqdmProgressCallback(BaseCallback):
+    """顯示 PPO 訓練進度（timesteps）與 ETA，並把 logger 指標放到 postfix。
+
+    之所以不用 SB3 內建的 ``progress_bar=True``：那個選項需要額外的 ``rich`` 依賴，
+    而本專案只想用已經裝好的 tqdm。
+    """
+
+    def __init__(
+        self,
+        *,
+        desc: str = "PPO 訓練",
+        enable: bool | None = None,
+        verbose: int = 0,
+    ) -> None:
+        super().__init__(verbose)
+        self.desc = desc
+        self.enable = enable
+        self.bar: Any = None
+        self._last_timesteps = 0
+
+    def _on_training_start(self) -> None:
+        total = int(getattr(self.model, "_total_timesteps", 0) or 0)
+        self.bar = progress_bar(
+            total=total or None,
+            desc=self.desc,
+            unit="step",
+            enable=self.enable,
+            position=0,
+        )
+        self._last_timesteps = 0
+
+    def _on_step(self) -> bool:
+        if self.bar is None:
+            return True
+        delta = int(self.num_timesteps) - self._last_timesteps
+        if delta > 0:
+            self._last_timesteps += delta
+            self.bar.update(delta)
+        self.bar.set_postfix(self._postfix(), refresh=False)
+        return True
+
+    def _on_training_end(self) -> None:
+        if self.bar is not None:
+            self.bar.close()
+            self.bar = None
+
+    def _postfix(self) -> dict[str, str]:
+        values = getattr(self.model.logger, "name_to_value", None) or {}
+        result: dict[str, str] = {}
+        for key, label in (
+            ("time/fps", "fps"),
+            ("rollout/ep_rew_mean", "rew"),
+            ("rollout/ep_len_mean", "len"),
+            ("train/approx_kl", "kl"),
+        ):
+            if key in values:
+                try:
+                    result[label] = f"{float(values[key]):.4g}"
+                except (TypeError, ValueError):  # pragma: no cover - logger 值異常時忽略
+                    continue
+        return result

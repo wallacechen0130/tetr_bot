@@ -15,6 +15,7 @@ tetr/                          # 專案根目錄
 │   └── logging.yaml           # 日誌與 TensorBoard/W&B 設定
 ├── envs/                      # 模擬環境
 │   ├── config.py              # YAML 載入與合併工具
+│   ├── progress.py            # 進度條（tqdm 包裝，含 ETA，非 TTY 自動關閉）
 │   ├── __init__.py            # Gymnasium 環境註冊 + make_env
 │   ├── engine/                # 純規則層（不依賴 gym / torch）
 │   │   ├── board.py           # 棋盤、消行、形狀特徵

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from envs.progress import progress_bar
 from evaluators.metrics import EpisodeMetrics
 
 
@@ -108,6 +109,29 @@ class BenchmarkRunner:
         env.close()
         return metrics
 
-    def run(self, episodes: int = 10, *, seeds: list[int] | None = None) -> list[EpisodeMetrics]:
+    def run(
+        self,
+        episodes: int = 10,
+        *,
+        seeds: list[int] | None = None,
+        show_progress: bool | None = None,
+    ) -> list[EpisodeMetrics]:
         seeds = seeds or [self.seed + index for index in range(episodes)]
-        return [self.run_episode(seed=seed) for seed in seeds[:episodes]]
+        results: list[EpisodeMetrics] = []
+        with progress_bar(
+            total=len(seeds[:episodes]),
+            desc="評估對局",
+            unit="episode",
+            enable=show_progress,
+            position=0,
+        ) as bar:
+            for seed in seeds[:episodes]:
+                metrics = self.run_episode(seed=seed)
+                results.append(metrics)
+                bar.update(1)
+                bar.set_postfix(
+                    lines=metrics.lines,
+                    elapsed=f"{metrics.elapsed:.0f}s",
+                    top_out=metrics.top_out,
+                )
+        return results
