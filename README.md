@@ -37,6 +37,29 @@ py -3.13 -m venv .venv
 | 匯出 ONNX | `python -m scripts.export_onnx --checkpoint checkpoints/il/best.pt` |
 | 與 Google Drive 同步 | `python -m scripts.sync_drive --direction to_drive` |
 
+### Google Drive 路徑怎麼填
+
+Google Drive 桌面版的「我的雲端硬碟」資料夾**名稱會跟著系統語系**，而且**不叫 `MyDrive`**：
+
+| 環境 | 正確路徑 |
+|---|---|
+| 繁體中文版 Windows | `G:\我的雲端硬碟\tetrio-ai` |
+| 英文版 Windows | `G:\My Drive\tetrio-ai` |
+| Colab | `/content/drive/MyDrive/tetrio-ai`（Colab 固定是 `MyDrive`） |
+
+不確定路徑時先讓工具找給你：
+
+```powershell
+python -m scripts.sync_drive --list-drives
+# 偵測到的 Google Drive 資料夾：
+#   G:\我的雲端硬碟
+#     建議的專案路徑：--drive "G:\我的雲端硬碟\tetrio-ai"
+```
+
+路徑寫錯（例如打成 `G:\MyDrive`）時會直接告訴你正確候選路徑，不會再丟出
+`FileNotFoundError: [WinError 2]`。工具也會自動處理重複的反斜線、`/` 混用、
+路徑前後的引號，以及 `~/` 展開。
+
 ## 進度與 ETA
 
 資料收集、IL 訓練、PPO 訓練與評估都內建 tqdm 進度條，附**預估剩餘時間（ETA）**：

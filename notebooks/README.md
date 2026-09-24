@@ -12,7 +12,8 @@
 
    ```powershell
    python -m scripts.generate_dataset --episodes 200 --workers 8
-   $env:TETRIO_AI_DRIVE = "G:/MyDrive/tetrio-ai"
+   python -m scripts.sync_drive --list-drives          # 先確認路徑（中文版是 G:\我的雲端硬碟）
+   $env:TETRIO_AI_DRIVE = "G:\我的雲端硬碟\tetrio-ai"   # 英文版：G:\My Drive\tetrio-ai
    python -m scripts.sync_drive --direction to_drive
    ```
 

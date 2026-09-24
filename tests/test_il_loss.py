@@ -85,7 +85,8 @@ def test_il_trainer_loss_is_bounded_including_topk_kl():
     }
     loss, logits, target = trainer._loss(batch)
     assert torch.isfinite(loss)
-    assert float(loss) < 20.0, f"IL loss 應該在正常範圍，得到 {float(loss)}"
+    value = float(loss.detach())
+    assert value < 20.0, f"IL loss 應該在正常範圍，得到 {value}"
     assert logits.shape == (3, 80)
     assert target.shape == (3,)
 

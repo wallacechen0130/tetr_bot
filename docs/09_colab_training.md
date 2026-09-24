@@ -18,12 +18,18 @@ MyDrive/tetrio-ai/
 同步指令（本機 ⇄ Drive，Colab 上 Drive 已掛載成檔案系統）：
 
 ```powershell
-$env:TETRIO_AI_DRIVE = "G:/MyDrive/tetrio-ai"      # 本機（Google Drive 桌面版）
+$env:TETRIO_AI_DRIVE = "G:\我的雲端硬碟\tetrio-ai"   # 本機：中文版 Google Drive 桌面版
+# 英文版是 "G:\My Drive\tetrio-ai"；Colab 固定是 /content/drive/MyDrive/tetrio-ai
 python -m scripts.sync_drive --direction to_drive   # 上傳
 python -m scripts.sync_drive --direction from_drive # 取回
+python -m scripts.sync_drive --list-drives          # 不確定路徑時先列出偵測結果
 ```
 
+> ⚠️ Google Drive 桌面版的資料夾叫「我的雲端硬碟」（中文）或「My Drive」（英文），**不是 `MyDrive`**。
+> 寫錯時 `mkdir` 會回報 `FileNotFoundError: [WinError 2]`；本工具會攔截並提示正確路徑。
+
 `scripts/sync_drive.py` 會比較檔案大小，相同者略過，並輸出 `logs/sync_report.json`。
+`__pycache__`、`*.pyc`、`.venv` 等本機產物會自動排除。
 
 ## 9.2 資料集結構
 

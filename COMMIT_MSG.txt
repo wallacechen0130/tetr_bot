@@ -1,0 +1,22 @@
+fix: sync_drive 路徑處理與 Google Drive 中文資料夾名稱
+
+症狀：--drive 指向 G:\MyDrive\tetrio-ai 時失敗於
+FileNotFoundError [WinError 2]。
+
+根因不是反斜線（pathlib 會自動正規化），而是 Google Drive 桌面版的資料夾
+名稱跟著系統語系：這台機器上是 G:\我的雲端硬碟（中文）。而且 Drive 的
+虛擬磁碟不允許建立最上層資料夾，所以 mkdir(parents=True) 只回了看不懂的
+WinError 2。
+
+修正：
+
+* envs/config.py 新增 normalize_user_path()：處理重複分隔符、正反斜線混用、
+  前後引號、~ 與環境變數，並保留 UNC 開頭的雙反斜線。
+* envs/config.py 新增 find_google_drive_roots()：掃描磁碟找出我的雲端硬碟，
+  支援多語系資料夾命名（My Drive / 我的雲端硬碟 / マイドライブ ...）。
+* scripts/sync_drive.py 改用上述工具並新增 --list-drives；路徑不存在時列出
+  偵測結果與建議指令，OSError 轉成可行動的說明；同步時排除 __pycache__、
+  *.pyc、.venv 等本機產物。
+
+文件：README、docs/09、notebooks/README 補上各環境正確路徑對照表；
+docs/12 新增 Bug 4 記錄。新增 tests/test_paths.py（7 項）。

@@ -52,6 +52,33 @@
 
 **修正**：`scripts/train_ppo.py` 在 `--no-warm-start` 時一併把 config 的 `il_warm_start` 設為 `None`。
 
+### Bug 4：`sync_drive` 的 `FileNotFoundError: [WinError 2]`
+
+**症狀**：`python -m scripts.sync_drive --drive "G:\MyDrive\tetrio-ai"` 失敗，
+訊息是 `FileNotFoundError: [WinError 2] 系統找不到指定的檔案。: 'G:\MyDrive'`。
+
+**根因**：不是反斜線寫錯（`pathlib` 會自動把 `\\` 正規化）。真正原因是
+**Google Drive 桌面版的資料夾名稱跟著系統語系**：這台機器上是
+`G:\我的雲端硬碟`（中文），不是 `G:\MyDrive`。而 Google Drive 的虛擬磁碟
+不允許建立最上層資料夾，所以 `mkdir(parents=True)` 只回了看不懂的 WinError 2。
+
+**修正**：
+
+1. `envs/config.py` 新增 `normalize_user_path()`（處理重複分隔符、`/`、引號、`~`、環境變數，
+   並保留 UNC 開頭的 `\\`）與 `find_google_drive_roots()`（掃描所有磁碟找出「我的雲端硬碟」）。
+2. `scripts/sync_drive.py` 改用它們，新增 `--list-drives`，路徑不存在時直接列出偵測到的
+   Drive 資料夾與建議指令，並把 `OSError` 轉成可行動的說明。
+3. 同步時排除 `__pycache__`、`*.pyc`、`.venv` 等本機產物。
+
+**正確用法**：
+
+```powershell
+python -m scripts.sync_drive --list-drives
+#   G:\我的雲端硬碟
+#     建議的專案路徑：--drive "G:\我的雲端硬碟\tetrio-ai"
+python -m scripts.sync_drive --drive "G:\我的雲端硬碟\tetrio-ai"
+```
+
 ## 已知限制
 
 ### IL top-1 準確率的先天天花板
