@@ -17,6 +17,11 @@
 
 `01` 與 `02` 的第一個 cell 會自己檢查專案是否存在、必要時重新 clone，並重新掛載 Drive，
 所以 **Colab 重啟後可以直接從 `01` 或 `02` 開始跑**，不必回頭執行 `00`。
+同一個 cell 也會檢查 `numpy / pandas / pyarrow / torch / stable_baselines3 / sb3_contrib`，
+缺少時才自動 `pip install -r requirements-colab.txt`（已裝過就跳過，重跑很快）。
+
+> IL 只需要 torch，PPO 才需要 stable-baselines3；程式碼已做延遲載入，
+> 所以只跑 `01` 的環境不會因為 SB3 缺失而爆掉。
 
 ## 使用流程
 

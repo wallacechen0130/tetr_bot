@@ -7,7 +7,14 @@ import json
 
 from envs.config import load_yaml
 from trainers.common import write_json
-from trainers.ppo_trainer import PPOTrainer
+
+try:
+    from trainers.ppo_trainer import PPOTrainer
+except ModuleNotFoundError as exc:  # pragma: no cover - 缺依賴時給出可執行的指示
+    raise SystemExit(
+        f"PPO 需要 stable-baselines3 與 sb3-contrib（{exc.name} 找不到）。\n"
+        "請先安裝依賴：pip install -r requirements-colab.txt（或 pip install -r requirements.txt）"
+    ) from exc
 
 
 def main() -> None:
