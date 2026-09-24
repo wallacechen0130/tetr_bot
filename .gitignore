@@ -18,6 +18,7 @@ datasets/*/shards/
 datasets/*/data.parquet
 datasets/*/manifest.json
 datasets/*/
+datasets/*.zip
 !datasets/README.md
 
 # 保留目錄結構

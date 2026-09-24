@@ -65,6 +65,9 @@ def test_dataset_to_il_to_ppo(tmp_path) -> None:
     trainer = ILTrainer(config)
     result = trainer.fit(epochs=1)
     assert result["best_top1"] >= 0.0
+    # 回歸測試：loss 必須在正常範圍（修正前會是 ~1e7）
+    assert result["history"][0]["train_loss"] < 30.0, result["history"][0]
+    assert result["history"][0]["val_loss"] < 30.0, result["history"][0]
     assert (tmp_path / "il" / "best.pt").exists()
 
     network = build_network("resnet")

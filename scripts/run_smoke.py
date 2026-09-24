@@ -103,10 +103,13 @@ def step_il(*, data_root: str = "datasets/smoke-v1", epochs: int = 1, limit: int
     _log(
         "il",
         f"best_top1={result['best_top1']:.3f} params={result['parameters']} "
-        f"train={result['train_samples']} val={result['val_samples']}",
+        f"train={result['train_samples']} val={result['val_samples']} "
+        f"loss={result['history'][-1]['train_loss']:.4f} val_loss={result['history'][-1]['val_loss']:.4f}",
     )
     return {
         "best_top1": float(result["best_top1"]),
+        "train_loss": float(result["history"][-1]["train_loss"]),
+        "val_loss": float(result["history"][-1]["val_loss"]),
         "parameters": float(result["parameters"]),
         "train_samples": float(result["train_samples"]),
     }

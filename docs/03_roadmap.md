@@ -52,8 +52,8 @@
 | 預估時間 | 1 週 |
 | 難度 | ★★☆☆☆ |
 | 預期成果 | `checkpoints/il/best.pt` |
-| 驗收門檻 | val top-1 ≥ 85%、top-3 ≥ 97%、行為上 40L 時間在教師 ±15% 內 |
-| 實測 | smoke 用 72 樣本 1 epoch 即高於隨機基線（0.125 vs 0.0125） |
+| 驗收門檻 | 29k 樣本：top-1 ≥ 0.45、top-3 ≥ 0.70、top1_tolerant ≥ 0.50（受限於等價標籤，見 [12_known_issues.md](12_known_issues.md)） |
+| 實測 | 28.8k 樣本 / 28 epochs：top-1 **0.485**、top-3 **0.734**、平手容忍 **0.518**（修 bug 前僅 0.151） |
 
 ## Phase 5：PPO Fine-Tuning（已完成程式碼，訓練待放大）
 

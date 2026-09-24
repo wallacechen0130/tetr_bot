@@ -44,7 +44,7 @@ py -3.13 -m venv .venv
 | `pytest tests -q` | 100 項全綠（約 16 秒） |
 | `python -m scripts.run_smoke` | 38.5 秒完成全流程 |
 | 啟發式教師 40L | 完成率 100%、平均 51.2 秒（2 PPS）、46.9 行/分、終局洞數 0 |
-| IL（小資料集 smoke） | top-1 0.125（80 類隨機基線 0.0125） |
+| IL（28.8k 樣本、28 epochs） | top-1 **0.485**、top-3 0.734、平手容忍 0.518（修 bug 前 0.151） |
 | PPO（2048 步 smoke） | 可訓練、IL 權重 95/95 張量載入 |
 | 難度 PPS 保真度 | 七級最大誤差 0.8% |
 | 難度 APM | 七級全部不超過目標上限（上限治理） |
@@ -98,3 +98,5 @@ Heuristic Teacher → Imitation Learning (Board → Action) → PPO Fine-tuning 
 2. 180° kick 表使用社群近似值，之後可替換 `configs/rules_tetrio.yaml` 的數值。
 3. 難度等級的 `target_apm` 是**上限**：要讓實際 APM 追上 50–150，需要完成 Phase 5 的 PPO 訓練。
 4. TETR.IO 接入尚未實作（僅介面與設計）。
+5. 教師標籤有約 20.8% 是「前兩名分數差 < 0.5」的等價落點，top-1 精確匹配因此有結構性上限；
+   詳見 [docs/12_known_issues.md](docs/12_known_issues.md)（含 2026-09-25 修正的兩個 bug 記錄）。

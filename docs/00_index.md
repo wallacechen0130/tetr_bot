@@ -19,6 +19,7 @@
 | 10 | [10_project_layout.md](10_project_layout.md) | 10 | 專案資料夾架構 |
 | 11 | [11_engineering.md](11_engineering.md) | 11 | 類別圖、模組依賴、API 與流程圖 |
 | 12 | [../README.md](../README.md) | 12 | 可執行 MVP 的使用說明 |
+| 13 | [12_known_issues.md](12_known_issues.md) | — | 修正記錄、IL 準確率天花板與已知限制 |
 
 ## 名詞表
 
@@ -43,10 +44,13 @@
 | Gymnasium 環境（3 種模式） | 完成 | `gymnasium.utils.env_checker` 通過 |
 | 啟發式教師 | 完成 | 40L 完成率 100%，平均 51.2 秒（2 PPS） |
 | 資料集產生（npz + parquet） | 完成 | 80 樣本 / 1.5 秒（2 workers） |
-| 模仿學習 | 完成 | 1 epoch、72 樣本可收斂開始學習 |
+| 模仿學習 | 完成 | 28.8k 樣本 / 28 epochs：top1 **0.485**、top3 0.734（修正前 0.151） |
 | PPO 微調（MaskablePPO） | 完成 | 2048 步 smoke test 通過，IL 權重 95/95 張量載入 |
 | 評估報告 | 完成 | JSON + Markdown，7 級 PPS 保真度誤差 < 0.8% |
 | TETR.IO 接入 | 介面完成、實作未做 | Phase 6（見 03_roadmap.md） |
+
+> 2026-09-25：修掉兩個實測 bug（IL loss 1e7、survival 模式誤用 40L 上限），
+> 詳見 [12_known_issues.md](12_known_issues.md)。
 
 測試指令：
 

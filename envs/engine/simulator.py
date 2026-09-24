@@ -45,7 +45,10 @@ class GameConfig:
         env = dict(data.get("env", {}))
         timing = dict(data.get("timing", {}))
         if overrides:
-            env.update({key: value for key, value in overrides.items() if value is not None})
+            # 注意：None 是有效覆寫值（代表「取消這個限制」）。
+            # 例如 survival 模式必須把 target_lines 從預設的 40 覆寫成 None，
+            # 若在這裡把 None 過濾掉，survival 會偷偷變成 40L，episode 會在 40 行提前結束。
+            env.update(overrides)
         return cls(
             rules=rules or Ruleset(),
             mode=str(env.get("mode", "survival")),

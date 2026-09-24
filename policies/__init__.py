@@ -1,7 +1,7 @@
 """神經網路策略：特徵抽取器、動作頭與網路工廠。"""
 
 from envs.gym.obs_encoder import VECTOR_DIM, VECTOR_KEYS
-from policies.action_heads import PolicyValueHead, masked_logits
+from policies.action_heads import PolicyValueHead, masked_cross_entropy, masked_logits
 from policies.extractors import (
     CNNWithAttention,
     ResNetBoardExtractor,
@@ -14,6 +14,7 @@ from policies.mlp import MLPFeatureExtractor
 
 __all__ = [
     "PolicyValueHead",
+    "masked_cross_entropy",
     "masked_logits",
     "CNNWithAttention",
     "ResNetBoardExtractor",

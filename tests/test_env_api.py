@@ -99,3 +99,30 @@ def test_render_returns_string_and_rgb() -> None:
     assert isinstance(image, np.ndarray)
     assert image.ndim == 3 and image.shape[2] == 3
     rgb_env.close()
+
+
+def test_mode_limits_are_not_leaked_between_modes() -> None:
+    """survival / versus 不可以繼承 40L 的 target_lines。"""
+
+    survival = gym.make("TetrisSurvival-v0")
+    assert survival.unwrapped.game_config.target_lines is None
+    assert survival.unwrapped.game_config.time_limit == 120.0
+    survival.close()
+
+    versus = gym.make("TetrisVersus-v0")
+    assert versus.unwrapped.game_config.target_lines is None
+    versus.close()
+
+    forty = gym.make("Tetris40L-v0")
+    assert forty.unwrapped.game_config.target_lines == 40
+    assert forty.unwrapped.game_config.time_limit is None
+    forty.close()
+
+
+def test_survival_does_not_end_at_forty_lines() -> None:
+    env = gym.make("TetrisSurvival-v0")
+    env.reset(seed=0)
+    env.unwrapped.sim.lines_total = 40
+    assert env.unwrapped.sim.completed() is False
+    assert env.unwrapped.sim.lines_remaining() is None
+    env.close()
