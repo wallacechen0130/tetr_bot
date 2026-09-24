@@ -12,6 +12,24 @@ from datasets.manifest import DatasetManifest, load_manifest
 from datasets.writer import SAMPLE_KEYS
 
 
+def resolve_relative(root: str | Path, relative: str) -> Path:
+    """把 manifest 內的相對路徑轉成實際路徑（跨平台）。
+
+    manifest 可能是在 Windows 上產生的，裡面會是
+    ``shards\\worker00_00000.npz``；到了 Colab / Linux，反斜線不是分隔符，
+    會被當成檔名的一部分，於是出現 ``.../shards\\worker00_00000.npz``
+    找不到檔案的錯誤。這裡統一轉成 POSIX 分隔符再組合，並忽略開頭的磁碟代號。
+    """
+
+    root = Path(root)
+    parts = [part for part in str(relative).replace("\\", "/").split("/") if part not in ("", ".", "..")]
+    if parts and parts[0].endswith(":"):  # 去掉 Windows 磁碟代號（例如 C:）
+        parts = parts[1:]
+    if not parts:
+        return root
+    return root.joinpath(*parts)
+
+
 class DatasetReader:
     """載入資料集並提供批次迭代。"""
 
@@ -24,24 +42,58 @@ class DatasetReader:
 
     # ------------------------------------------------------------------ 資料
     def shard_paths(self) -> list[Path]:
-        paths = [self.root / shard for shard in self.manifest.shards]
-        if not paths:
-            paths = sorted((self.root / "shards").glob("*.npz"))
-        return paths
+        """回傳實際存在的 shard 路徑。
+
+        跨平台與部分同步的容錯：
+
+        * manifest 內可能是 Windows 反斜線路徑 → 用 ``resolve_relative`` 正規化。
+        * Drive 只同步了一部分、或 manifest 與檔案對不上時，改用 ``shards/*.npz``
+          實際掃到的檔案，並印出明顯警告（不讓訓練直接爆掉）。
+        """
+
+        declared = [resolve_relative(self.root, shard) for shard in self.manifest.shards]
+        existing = [path for path in declared if path.exists()]
+        if declared and len(existing) == len(declared):
+            return declared
+
+        fallback = sorted((self.root / "shards").glob("*.npz"))
+        if fallback:
+            if declared:
+                print(
+                    f"[DatasetReader] manifest 列出 {len(declared)} 個 shard，"
+                    f"實際只找到 {len(existing)} 個（例：{declared[0].name}）。"
+                    f"改用 {self.root / 'shards'} 下的 {len(fallback)} 個 npz。"
+                    "若數字不符，請重新同步資料集。"
+                )
+            return fallback
+        if declared:
+            raise FileNotFoundError(
+                f"manifest 指向 {len(declared)} 個不存在的 shard，例如：{declared[0]}\n"
+                f"請確認 {self.root / 'shards'} 內有 .npz 檔案（可能是 Drive 尚未同步完成）。"
+            )
+        return []
 
     def arrays(self) -> dict[str, np.ndarray]:
-        """把所有 shard 串成單一大陣列（MVP 規模足夠）。"""
+        """把所有 shard 串成單一大陣列。
+
+        ``limit`` 會在讀滿指定筆數後就停止讀檔，不會先把整個資料集載進記憶體
+        （147 萬筆的資料集約 1.2 GB，用 ``--limit`` 做小樣本測試時不需要全載）。
+        """
 
         data: dict[str, list[np.ndarray]] = {key: [] for key in SAMPLE_KEYS}
+        collected = 0
         for path in self.shard_paths():
+            if self.limit is not None and collected >= self.limit:
+                break
             with np.load(path) as shard:
+                available = int(shard["action"].shape[0])
+                take = available if self.limit is None else min(available, self.limit - collected)
                 for key in SAMPLE_KEYS:
-                    data[key].append(shard[key])
+                    data[key].append(shard[key][:take])
+                collected += take
         if not data["action"]:
             raise ValueError(f"資料集沒有任何 shard：{self.root}")
         merged = {key: np.concatenate(values, axis=0) for key, values in data.items()}
-        if self.limit is not None:
-            merged = {key: value[: self.limit] for key, value in merged.items()}
         return merged
 
     def parquet_arrays(self) -> dict[str, np.ndarray]:

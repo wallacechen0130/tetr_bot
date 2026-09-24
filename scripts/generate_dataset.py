@@ -168,7 +168,9 @@ def generate(
 
     files: list[str] = []
     if "parquet" in formats and shards:
-        write_parquet_from_shards(out_dir, [out_dir / shard for shard in shards])
+        from datasets.reader import resolve_relative
+
+        write_parquet_from_shards(out_dir, [resolve_relative(out_dir, shard) for shard in shards])
         files.append("data.parquet")
 
     manifest = DatasetManifest(

@@ -95,7 +95,8 @@ class DatasetWriter:
         if "npz" in self.formats:
             shard_path = self.shard_dir / f"{self.shard_prefix}_{index:05d}.npz"
             np.savez_compressed(shard_path, **arrays)
-            self._shards.append(str(shard_path.relative_to(self.root)))
+            # 一律存 POSIX 分隔符，讓 manifest 能被 Linux / Colab 讀取
+            self._shards.append(shard_path.relative_to(self.root).as_posix())
         if "parquet" in self.formats:
             self._write_parquet(arrays)
         self._num_samples += len(self._buffer)
@@ -116,7 +117,7 @@ class DatasetWriter:
         if self._parquet_writer is not None:
             self._parquet_writer.close()
             assert self._parquet_path is not None
-            self._files.append(str(self._parquet_path.relative_to(self.root)))
+            self._files.append(self._parquet_path.relative_to(self.root).as_posix())
         manifest = DatasetManifest(
             name=self.name,
             num_samples=self._num_samples,
