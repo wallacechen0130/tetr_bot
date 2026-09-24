@@ -6,6 +6,18 @@
 | `01_il_train_colab.ipynb` | 模仿學習訓練（可選先產生資料集） |
 | `02_ppo_train_colab.ipynb` | PPO 微調（IL 熱啟動、resume、TensorBoard / W&B） |
 
+## 程式碼從哪裡來
+
+`00` 會依序嘗試三種方式，**預設直接從 GitHub 抓，不需要上傳 zip**：
+
+1. 已有 `/content/tetrio-ai/.git` → `git pull` 更新
+2. 已有 `/content/tetrio-ai/requirements.txt` → 直接沿用
+3. 否則 `git clone --depth 1 https://github.com/wallacechen0130/tetr_bot.git /content/tetrio-ai`
+   （若 clone 失敗才退回讀 `MyDrive/tetrio-ai/code/tetrio-ai.zip`）
+
+`01` 與 `02` 的第一個 cell 會自己檢查專案是否存在、必要時重新 clone，並重新掛載 Drive，
+所以 **Colab 重啟後可以直接從 `01` 或 `02` 開始跑**，不必回頭執行 `00`。
+
 ## 使用流程
 
 1. 在本機（CPU 較快）產生資料集並上傳到 Drive：
@@ -17,7 +29,8 @@
    python -m scripts.sync_drive --direction to_drive
    ```
 
-2. 依序執行 `00 → 01 → 02`。
+2. 在 Colab 依序執行 `00 → 01 → 02`（重啟後也可直接從 `01` 開始）。
+   `01` 會自動挑選 Drive 上最新的資料集（沒有 `heuristic-v1` 時會用 `verify-v2` 之類的）。
 3. 訓練完把 checkpoint 取回本機：
 
    ```powershell
