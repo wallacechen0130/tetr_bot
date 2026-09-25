@@ -19,14 +19,45 @@ DEFAULT_SUBDIRS = ("datasets", "checkpoints", "logs")
 EXCLUDED_DIR_NAMES: frozenset[str] = frozenset(
     {"__pycache__", ".pytest_cache", ".ruff_cache", ".ipynb_checkpoints", ".venv"}
 )
+# Windows / Google Drive 產生的中繼檔，搬到哪都沒用
+EXCLUDED_FILE_NAMES: frozenset[str] = frozenset({"desktop.ini", "Thumbs.db", ".DS_Store"})
+# 這個指令是同步「資料與模型」，不是同步原始碼。
+# 把 .py / .md / .yaml 也同步會讓 --direction from_drive 用 Drive 上的舊程式碼
+# 覆蓋掉本機較新的原始碼（實際踩過這個坑）。
+EXCLUDED_SUFFIXES: frozenset[str] = frozenset(
+    {".py", ".pyc", ".pyi", ".ipynb", ".md", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".json5"}
+)
 
 
 def is_excluded(path: Path) -> bool:
     """判斷是否為不需同步的雜項檔案。"""
 
-    if path.suffix == ".pyc":
+    if path.suffix in EXCLUDED_SUFFIXES:
+        return True
+    if path.name in EXCLUDED_FILE_NAMES:
         return True
     return any(part in EXCLUDED_DIR_NAMES for part in path.parts)
+
+
+def should_copy(src: Path, dst: Path, *, overwrite: bool = False) -> tuple[bool, str]:
+    """決定是否要複製這個檔案，回傳 (是否複製, 原因)。
+
+    除了大小不同就複製之外，這裡也用**修改時間**判斷新舊：
+    目標檔比來源新時不覆蓋，避免 ``--direction from_drive`` 用較舊的
+    Drive 內容蓋掉本機剛更新過的檔案。
+    """
+
+    if not dst.exists():
+        return True, "new"
+    if overwrite:
+        return True, "overwrite"
+    src_stat = src.stat()
+    dst_stat = dst.stat()
+    if dst_stat.st_size == src_stat.st_size:
+        return False, "same-size"
+    if dst_stat.st_mtime > src_stat.st_mtime + 1.0:
+        return False, "target-newer"
+    return True, "source-newer"
 
 
 def sha256(path: Path, chunk: int = 1 << 20) -> str:
@@ -43,6 +74,7 @@ def sha256(path: Path, chunk: int = 1 << 20) -> str:
 class SyncReport:
     copied: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
+    kept_newer: list[str] = field(default_factory=list)
     direction: str = "to_drive"
 
     def to_dict(self) -> dict[str, object]:
@@ -50,12 +82,19 @@ class SyncReport:
             "direction": self.direction,
             "copied": len(self.copied),
             "skipped": len(self.skipped),
+            "kept_newer": len(self.kept_newer),
             "copied_files": self.copied,
+            "kept_newer_files": self.kept_newer,
         }
 
 
 def sync(src_root: Path, dst_root: Path, *, subdirs: tuple[str, ...] = DEFAULT_SUBDIRS, overwrite: bool = False) -> SyncReport:
-    """複製指定子目錄；已存在且大小相同者略過。"""
+    """複製指定子目錄下的資料與模型。
+
+    * 原始碼與文件（``.py`` / ``.md`` / ``.yaml`` …）一律不同步。
+    * 大小相同者略過；大小不同時再比修改時間，**不會**用較舊的檔案蓋掉較新的檔案
+      （除非加 ``--overwrite``）。
+    """
 
     report = SyncReport()
     for name in subdirs:
@@ -70,8 +109,12 @@ def sync(src_root: Path, dst_root: Path, *, subdirs: tuple[str, ...] = DEFAULT_S
                 continue
             relative = path.relative_to(src_root)
             target = dst_root / relative
-            if target.exists() and not overwrite and target.stat().st_size == path.stat().st_size:
-                report.skipped.append(str(relative))
+            copy_it, reason = should_copy(path, target, overwrite=overwrite)
+            if not copy_it:
+                if reason == "target-newer":
+                    report.kept_newer.append(str(relative))
+                else:
+                    report.skipped.append(str(relative))
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, target)
@@ -164,7 +207,17 @@ def main() -> None:
         ) from exc
     report.direction = args.direction
     write_json(local_root / args.out, report.to_dict())
-    print(json.dumps(report.to_dict(), indent=2, ensure_ascii=False)[:2000])
+    summary = report.to_dict()
+    print(json.dumps({k: v for k, v in summary.items() if not k.endswith("_files")}, indent=2, ensure_ascii=False))
+    if report.kept_newer:
+        print(f"\n有 {len(report.kept_newer)} 個檔案因為本機版本較新而保留（未覆蓋）：")
+        for name in report.kept_newer[:10]:
+            print("  ", name)
+        if len(report.kept_newer) > 10:
+            print(f"   ...（其餘 {len(report.kept_newer) - 10} 個見 {args.out}）")
+        print("確定要用來源覆蓋時，加上 --overwrite。")
+    if report.copied:
+        print(f"\n已複製 {len(report.copied)} 個檔案，清單見 {args.out}")
 
 
 if __name__ == "__main__":

@@ -81,6 +81,63 @@ python -m scripts.sync_drive --drive "G:\我的雲端硬碟\tetrio-ai"
 
 ## 已知限制
 
+### Bug 5：`best.zip` 從來沒被存下來
+
+**症狀**：`python -m scripts.evaluate --agent policy --model checkpoints/ppo/best.zip`
+→ `FileNotFoundError: checkpoints/ppo/best.zip`；TensorBoard 也看不到 reward 曲線。
+
+**根因**：`PPOTrainer.build_vec_env()` 直接用 `DummyVecEnv`/`SubprocVecEnv`，
+外層沒有 `VecMonitor`。SB3 的 episode 統計（`info["episode"]`、`rollout/ep_rew_mean`）
+是由 Monitor 產生的，少了它 `BestModelCallback` 永遠等不到 episode 結束，
+自然存不出 `best.zip`。
+
+**修正**：`build_vec_env()` 改為 `VecMonitor(base_env, filename=.../monitor.csv)`。
+
+### Bug 6：`PolicyAgent` 從頭到尾都是壞的
+
+**症狀**：載入 IL checkpoint 後跑評估會出現矩陣維度不符，或（更糟）看似正常但其實是隨機權重。
+
+**根因**（兩個獨立的錯）：
+
+1. `_vector()` 用 `FLAT_KEYS`（含棋盤）攤平 → 560 維，但網路要的是 160 維的 `VECTOR_KEYS`。
+2. 建構網路時固定用 `resnet`，載入 `small_cnn` 的 checkpoint 時因為 `strict=False`
+   **什麼都沒載到卻不報錯**。
+
+**修正**：改用 `vector_from_observation()`；新增 `_infer_network()`
+從 checkpoint 設定或 state_dict 的 key 推斷架構，並在匹配率 < 80% 時大聲警告；
+若 checkpoint 來自 `--limit` 小樣本訓練也會提醒。
+
+### Bug 7：PPO 不能只靠網路名稱「剛好一樣」
+
+**症狀**：IL 用 `small_cnn`、PPO 用 `resnet` 時，warm start 只載入 17/95 個張量，
+PPO 實質從隨機策略開始訓練，結果模型只活 7 顆方塊就 top out。
+
+**修正**：warm start 後計算匹配率，< 80% 就印出「等於幾乎沒有熱啟動」的警告；
+一頁式 notebook 也改成 `ppo_config['model']['network'] = il_config.network`
+（PPO 自動沿用 IL 的網路），並在短跑 cell 印出 `IL 權重轉移: loaded/total`。
+
+### Bug 8：`sync_drive --direction from_drive` 會蓋掉本機原始碼
+
+**症狀**：同步後本機 `datasets/reader.py` 變舊、`resolve_relative` 消失，測試開始失敗。
+
+**根因**：`sync()` 只比對檔案大小，且把 `datasets/` 底下的 `.py` 原始碼也當成資料同步；
+Drive 上是舊版時，`from_drive` 就會用舊程式碼覆蓋本機的新版。
+
+**修正**：同步排除原始碼與文件（`.py` / `.md` / `.yaml` / `.ipynb` …）與
+`desktop.ini` 之類的中繼檔；大小不同時再比對修改時間，**不會**用較舊的檔案蓋掉較新的檔案
+（除非加 `--overwrite`），並在報告中列出 `kept_newer` 清單。
+
+### PPO 的 `.zip` 不能用 PolicyAgent 載入
+
+SB3 的模型是 zip 壓縮檔，`torch.load` 讀不了。已新增 `PPOAgent`，
+且 `scripts/evaluate.py` 會依副檔名自動選擇（`.pt` → IL、`.zip` → PPO）：
+
+```powershell
+python -m scripts.evaluate --agent policy --model checkpoints/ppo/best.zip --env-id Tetris40L-v0 --episodes 3
+# 或明確指定
+python -m scripts.evaluate --agent ppo    --model checkpoints/ppo/best.zip
+```
+
 ### IL top-1 準確率的先天天花板
 
 教師的最佳落點常常與次佳幾乎同分：

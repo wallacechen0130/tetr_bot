@@ -89,20 +89,30 @@ class PPOTrainer:
 
     # ------------------------------------------------------------------ 環境
     def build_vec_env(self, *, n_envs: int | None = None, vec_type: str | None = None) -> Any:
-        """建立向量化環境（SubprocVecEnv 失敗時自動退回 DummyVecEnv）。"""
+        """建立向量化環境（SubprocVecEnv 失敗時自動退回 DummyVecEnv）。
 
-        from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+        外層一定要包 ``VecMonitor``：SB3 的 episode 統計（``info["episode"]``、
+        TensorBoard 的 ``rollout/ep_rew_mean``）是由 Monitor 產生的。
+        少了它 ``BestModelCallback`` 永遠不會存 ``best.zip``，
+        TensorBoard 也看不到 reward 曲線。
+        """
+
+        from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecMonitor
 
         n_envs = int(n_envs or self.n_envs)
         vec_type = (vec_type or self.vec_type).lower()
         factories = [make_env_worker(self.env_id, rank, self.seed, self.env_kwargs) for rank in range(n_envs)]
         if vec_type == "subproc" and n_envs > 1:
             try:
-                self.env = SubprocVecEnv(factories, start_method="spawn")
-                return self.env
+                base_env: Any = SubprocVecEnv(factories, start_method="spawn")
             except Exception as exc:  # pragma: no cover - 平台限制時退回
                 print(f"[PPOTrainer] SubprocVecEnv 失敗（{exc}），改用 DummyVecEnv")
-        self.env = DummyVecEnv(factories)
+                base_env = DummyVecEnv(factories)
+        else:
+            base_env = DummyVecEnv(factories)
+
+        ensure_dir(self.tensorboard_dir)
+        self.env = VecMonitor(base_env, filename=str(Path(self.tensorboard_dir) / "monitor.csv"))
         return self.env
 
     # ------------------------------------------------------------------ 模型
@@ -151,6 +161,20 @@ class PPOTrainer:
         report = extractor.load_pretrained(state)
         self.transfer = TransferReport(loaded=report["loaded"], total=report["total"], source=str(target))
         print(f"[PPOTrainer] IL warm start：{report['loaded']}/{report['total']} 個張量已載入")
+        ratio = report["loaded"] / max(1, report["total"])
+        if ratio < 0.8:
+            print(
+                f"[PPOTrainer] ⚠️ 只匹配到 {ratio:.0%} 的張量，等於幾乎沒有熱啟動。\n"
+                "              請確認 IL 與 PPO 的網路名稱一致："
+                "configs/ppo.yaml 的 model.network 必須等於 IL 訓練時的 --network。"
+            )
+        else:
+            config = payload.get("extra", {}).get("config", {}) if isinstance(payload, dict) else {}
+            if isinstance(config, dict) and config.get("limit") is not None:
+                print(
+                    f"[PPOTrainer] ⚠️ 來源 IL 模型是 limit={config['limit']} 的小樣本模型"
+                    f"（top1={payload.get('metrics', {}).get('top1')}），建議先完成全量 IL 訓練。"
+                )
         return self.transfer
 
     # ------------------------------------------------------------------ 訓練

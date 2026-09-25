@@ -42,9 +42,7 @@ class DatasetReader:
 
     # ------------------------------------------------------------------ 資料
     def shard_paths(self) -> list[Path]:
-        """回傳實際存在的 shard 路徑。
-
-        跨平台與部分同步的容錯：
+        """回傳實際存在的 shard 路徑（跨平台與部分同步的容錯）。
 
         * manifest 內可能是 Windows 反斜線路徑 → 用 ``resolve_relative`` 正規化。
         * Drive 只同步了一部分、或 manifest 與檔案對不上時，改用 ``shards/*.npz``
@@ -76,8 +74,8 @@ class DatasetReader:
     def arrays(self) -> dict[str, np.ndarray]:
         """把所有 shard 串成單一大陣列。
 
-        ``limit`` 會在讀滿指定筆數後就停止讀檔，不會先把整個資料集載進記憶體
-        （147 萬筆的資料集約 1.2 GB，用 ``--limit`` 做小樣本測試時不需要全載）。
+        ``limit`` 會在讀滿指定筆數後停止讀檔，不會先把整個資料集載進記憶體
+        （147 萬筆約 1.2 GB，用 ``--limit`` 做小樣本測試時不需要全載）。
         """
 
         data: dict[str, list[np.ndarray]] = {key: [] for key in SAMPLE_KEYS}

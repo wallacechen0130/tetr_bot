@@ -2,7 +2,7 @@
 
 from agents.base import Agent, BaseAgent
 from agents.heuristic_agent import Candidate, HeuristicAgent
-from agents.policy_agent import PolicyAgent
+from agents.policy_agent import PolicyAgent, PPOAgent
 from agents.random_agent import RandomAgent
 from agents.scripted_agent import ScriptedOpponent, ScriptedPlayer
 
@@ -13,6 +13,7 @@ __all__ = [
     "HeuristicAgent",
     "Candidate",
     "PolicyAgent",
+    "PPOAgent",
     "ScriptedPlayer",
     "ScriptedOpponent",
 ]

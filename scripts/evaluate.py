@@ -9,7 +9,7 @@ import gymnasium as gym
 
 import envs  # noqa: F401 - 匯入即完成環境註冊
 from agents.heuristic_agent import HeuristicAgent
-from agents.policy_agent import PolicyAgent
+from agents.policy_agent import PolicyAgent, PPOAgent
 from agents.random_agent import RandomAgent
 from agents.scripted_agent import ScriptedPlayer
 from controllers.difficulty import DifficultyController
@@ -21,19 +21,31 @@ from evaluators.report import write_report
 
 
 def build_agent(kind: str, *, depth: int, model_path: str | None, seed: int):
+    """建立要評估的 agent。
+
+    ``--agent policy`` 會依副檔名自動選擇載入器：
+
+    * ``.pt``  → IL 的 ``TetrisNetwork``（PolicyAgent）
+    * ``.zip`` → stable-baselines3 的 PPO 模型（PPOAgent）
+    """
+
     if kind == "random":
         return RandomAgent(seed=seed)
     if kind == "scripted":
         return ScriptedPlayer(seed=seed)
-    if kind == "policy":
+    if kind in ("policy", "ppo"):
+        if not model_path:
+            raise SystemExit("--agent policy 需要指定 --model <checkpoint 路徑>")
+        if str(model_path).lower().endswith(".zip"):
+            return PPOAgent(model_path, seed=seed)
         return PolicyAgent(model_path, seed=seed)
     return HeuristicAgent(depth=depth, seed=seed)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Tetris AI 評估")
-    parser.add_argument("--agent", default="heuristic", choices=["heuristic", "random", "policy", "scripted"])
-    parser.add_argument("--model", default=None, help="policy agent 的 .pt 路徑")
+    parser.add_argument("--agent", default="heuristic", choices=["heuristic", "random", "policy", "ppo", "scripted"])
+    parser.add_argument("--model", default=None, help="policy 的 .pt（IL）或 .zip（PPO）路徑")
     parser.add_argument("--env-id", default="TetrisSurvival-v0")
     parser.add_argument("--episodes", type=int, default=5)
     parser.add_argument("--seed", type=int, default=7)

@@ -204,6 +204,11 @@ class ILTrainer:
         from torch.utils.data import DataLoader
 
         epochs = int(epochs or self.config.epochs)
+        if self.config.limit is not None:
+            print(
+                f"[ILTrainer] 注意：這是小樣本驗證（limit={self.config.limit}），"
+                "checkpoint 會存到同一個 best.pt；正式訓練請把 limit 設成 None。"
+            )
         train_ds, val_ds = self.build_datasets()
         train_loader = DataLoader(
             train_ds,
