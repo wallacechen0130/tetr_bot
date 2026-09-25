@@ -72,6 +72,7 @@ PPO 訓練:  51%|██████      | 1036/2048 [00:18<00:57, 17.49step/s, 
 ```
 
 * 輸出被重導向、在 CI 或 pytest 底下執行時會**自動關閉**，不會汙染日誌。
+* 在 Colab / Jupyter 會自動啟用：kernel 內執行時是原生 widget 進度條，子行程則以 `\r` 重畫同一行。
 * 需要關掉時可加 `--no-progress`：`python -m scripts.train_il --no-progress`。
 
 ## 目前實測結果（本機 i5-13500H / CPU only）

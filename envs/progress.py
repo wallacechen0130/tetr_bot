@@ -1,20 +1,46 @@
 """統一的進度條工具（tqdm 包裝，附 ETA）。
 
 設計要點：
+
 * 只要給 ``total``，tqdm 就會自動顯示剩餘時間（ETA）與速度。
-* 非終端機環境（輸出被重導向、CI、pytest）自動停用，避免日誌被控制字元汙染。
+* **終端機**：正常顯示。
+* **Colab / Jupyter**：使用 ``tqdm.auto``，在 notebook kernel 內會渲染成原生進度條 widget；
+  以子行程執行時（``!python -m scripts...``）則用 ``\\r`` 更新，Colab 也會即時重畫。
+* **其他非互動環境**（輸出被重導向、CI、pytest）：自動停用，避免日誌被控制字元汙染。
 * 沒安裝 tqdm 時回傳一個介面相同的空物件，程式不會因此壞掉。
 """
 
 from __future__ import annotations
 
+import os
 import sys
 from typing import Any
 
 try:  # pragma: no cover - 取決於環境是否安裝 tqdm
-    from tqdm import tqdm
+    from tqdm.auto import tqdm as _tqdm_auto
+except Exception:  # pragma: no cover - 沒有 tqdm 或 ipywidgets 異常時
+    _tqdm_auto = None
+
+try:  # pragma: no cover
+    from tqdm import tqdm as _tqdm_std
 except ImportError:  # pragma: no cover
-    tqdm = None  # type: ignore[assignment]
+    _tqdm_std = None
+
+
+def in_notebook() -> bool:
+    """是否在 Jupyter / Colab 這類 notebook 環境（含 Colab 的子行程）。"""
+
+    if "ipykernel" in sys.modules or "google.colab" in sys.modules:
+        return True
+    # Colab 的子行程不會載入 ipykernel，但會繼承這些環境變數
+    if any(key.startswith("COLAB_") for key in os.environ):
+        return True
+    try:  # pragma: no cover - 只有在 notebook 內才會有 IPython shell
+        from IPython import get_ipython
+
+        return get_ipython() is not None
+    except Exception:
+        return False
 
 
 def progress_enabled(explicit: bool | None = None) -> bool:
@@ -26,6 +52,8 @@ def progress_enabled(explicit: bool | None = None) -> bool:
 
     if explicit is not None:
         return bool(explicit)
+    if in_notebook():
+        return True
     try:
         return bool(sys.stderr.isatty())
     except Exception:  # pragma: no cover - 極端環境
@@ -85,11 +113,17 @@ def progress_bar(
                 bar.update(1)
     """
 
-    if tqdm is None or not progress_enabled(enable):
+    implementation = _tqdm_auto or _tqdm_std
+    if implementation is None or not progress_enabled(enable):
         return _NullProgressBar()
     kwargs.setdefault("dynamic_ncols", True)
     kwargs.setdefault("mininterval", 0.5)
-    return tqdm(total=total, desc=desc, unit=unit, **kwargs)
+    try:
+        return implementation(total=total, desc=desc, unit=unit, **kwargs)
+    except Exception:  # pragma: no cover - 例如 notebook widget 建不起來
+        if _tqdm_std is None:
+            return _NullProgressBar()
+        return _tqdm_std(total=total, desc=desc, unit=unit, **kwargs)
 
 
 def format_seconds(seconds: float) -> str:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from envs.progress import format_seconds, progress_bar, progress_enabled
+from envs.progress import format_seconds, in_notebook, progress_bar, progress_enabled
 
 
 def test_progress_bar_can_be_disabled():
@@ -20,6 +20,31 @@ def test_progress_enabled_returns_bool():
     assert progress_enabled(True) is True
     assert progress_enabled(False) is False
     assert isinstance(progress_enabled(None), bool)
+
+
+def test_notebook_detection_via_colab_env(monkeypatch):
+    """Colab 的子行程沒有 ipykernel，但會繼承 COLAB_* 環境變數。"""
+
+    for key in list(__import__("os").environ):
+        if key.startswith("COLAB_"):
+            monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("COLAB_RELEASE_TAG", "release-test")
+    assert in_notebook() is True
+    assert progress_enabled(None) is True
+
+
+def test_notebook_batch_bar_is_suppressed(monkeypatch):
+    """Colab 只留外層 epoch 進度條，避免一堆 widget。"""
+
+    pytest = __import__("pytest")
+    pytest.importorskip("torch")
+    from trainers.il_trainer import ILConfig, ILTrainer
+
+    monkeypatch.setenv("COLAB_RELEASE_TAG", "release-test")
+    trainer = ILTrainer(ILConfig(network="small_cnn", hidden_dim=32, data_root="unused"), device="cpu")
+    assert trainer._batch_bar_enabled() is False
+    trainer.config.show_progress = False
+    assert trainer._batch_bar_enabled() is False
 
 
 def test_format_seconds():

@@ -33,6 +33,15 @@
 > IL 只需要 torch，PPO 才需要 stable-baselines3；程式碼已做延遲載入，
 > 所以只跑 `01` 的環境不會因為 SB3 缺失而爆掉。
 
+## 進度條在 Colab 的行為
+
+* 一頁式 notebook 的訓練 cell 用 **Python API 在 kernel 內執行**，tqdm 會渲染成
+  Colab 原生進度條 widget（含 ETA、即時 loss / val 指標）。
+* 用 `!python -m scripts...` 這種子行程方式也看得到進度條，只是改用 `\r` 重畫同一行
+  （跟 `pip install` 的進度條一樣）。
+* notebook 內只保留外層 epoch 進度條，避免一次出現一堆 widget；終端機執行時才會有內層 batch 進度條。
+* 在純 CI / 日誌（輸出被重導向且不在 notebook）會自動停用，可用 `--no-progress` 手動關閉。
+
 ## 使用流程
 
 1. 在本機（CPU 較快）產生資料集並上傳到 Drive：

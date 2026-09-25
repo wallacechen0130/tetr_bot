@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from datasets.reader import DatasetReader, TensorDataset, split_indices
-from envs.progress import progress_bar
+from envs.progress import in_notebook, progress_bar
 from policies.action_heads import masked_cross_entropy, masked_logits
 from policies.factory import build_network, count_parameters
 from trainers.common import ensure_dir, load_checkpoint, resolve_device, save_checkpoint, set_seed
@@ -150,6 +150,19 @@ class ILTrainer:
         kl = (teacher * (torch.log(teacher.clamp(min=1e-12)) - student)).sum(dim=-1)
         return kl.mean()
 
+    def _batch_bar_enabled(self) -> bool | None:
+        """是否顯示內層 batch 進度條。
+
+        Colab / Jupyter 裡每個進度條都是一個 widget，內外兩層會讓輸出很亂，
+        因此 notebook 環境只留外層 epoch 進度條（一樣有 ETA 與 val 指標）。
+        """
+
+        if self.config.show_progress is False:
+            return False
+        if in_notebook():
+            return False
+        return self.config.show_progress
+
     @staticmethod
     def _accuracy(logits: Any, target: Any, mask: Any, topk: int = 1) -> float:
         torch = __import__("torch")
@@ -221,7 +234,7 @@ class ILTrainer:
                     total=len(train_loader),
                     desc=f"  epoch {epoch}/{epochs}",
                     unit="batch",
-                    enable=self.config.show_progress,
+                    enable=self._batch_bar_enabled(),
                     position=1,
                     leave=False,
                 )
