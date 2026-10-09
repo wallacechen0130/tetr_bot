@@ -20,6 +20,7 @@
 | 11 | [11_engineering.md](11_engineering.md) | 11 | 類別圖、模組依賴、API 與流程圖 |
 | 12 | [../README.md](../README.md) | 12 | 可執行 MVP 的使用說明 |
 | 13 | [12_known_issues.md](12_known_issues.md) | — | 修正記錄、IL 準確率天花板與已知限制 |
+| 14 | [13_how_it_works.md](13_how_it_works.md) | — | **運作原理詳解**：IL 怎麼學、PPO 怎麼超越教師、七級難度保真度在量什麼 |
 
 ## 名詞表
 

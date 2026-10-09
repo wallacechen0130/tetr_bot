@@ -126,6 +126,8 @@ Heuristic Teacher → Imitation Learning (Board → Action) → PPO Fine-tuning 
 | 9 Colab 訓練方案 | [docs/09_colab_training.md](docs/09_colab_training.md) |
 | 10 專案資料夾架構 | [docs/10_project_layout.md](docs/10_project_layout.md) |
 | 11 生產級程式設計 | [docs/11_engineering.md](docs/11_engineering.md) |
+| 13 運作原理詳解（IL / PPO / 難度保真度） | [docs/13_how_it_works.md](docs/13_how_it_works.md) |
+| 12 修正記錄與已知限制 | [docs/12_known_issues.md](docs/12_known_issues.md) |
 
 ## 環境需求
 
