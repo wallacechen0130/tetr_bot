@@ -75,7 +75,7 @@ PPO 訓練:  51%|██████      | 1036/2048 [00:18<00:57, 17.49step/s, 
 * 在 Colab / Jupyter 會自動啟用：kernel 內執行時是原生 widget 進度條，子行程則以 `\r` 重畫同一行。
 * 需要關掉時可加 `--no-progress`：`python -m scripts.train_il --no-progress`。
 
-## 目前實測結果（本機 i5-13500H / CPU only）
+## 目前實測結果（本機 i5-13500H / CPU only，實測日期 2026-10-15）
 
 | 項目 | 結果 |
 |---|---|

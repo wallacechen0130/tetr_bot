@@ -36,11 +36,15 @@
 
 ## 文件數字來源（方便日後更新）
 
+> **數據快照**：以下數字皆為 **2026-10-15** 於本機（Windows 11 / i5-13500H / 16 GB RAM / 純 CPU）實測。
+> 重新跑訓練或評估後，請用同一批指令更新數字，並同步修改內文的實測日期。
+
 | 數字 | 來源 |
 |---|---|
-| 141 項測試 | `python -m pytest tests -q` |
+| 141 項測試（21 個測試檔） | `python -m pytest tests -q`（全數通過、0 失敗） |
 | 7,583 行程式 / 95 檔 | `Get-ChildItem <套件> -Recurse -Filter *.py` 統計 |
 | 資料集 2,063,231 筆 | `datasets/heuristic-v1/manifest.json` |
-| 40L 51.2 秒 / 完成率 100% | `logs/heuristic_40l.json` |
+| 40L 51.2 秒 / 完成率 100% / 0 洞 | `logs/heuristic_40l.json`（3 局，`--seed 7`；相同 seed 重跑結果完全相同） |
 | 難度 PPS 誤差 0.8% | `logs/difficulty.json`（`max_pps_error`） |
 | IL top-1 0.485 | `docs/12_known_issues.md` 的學習曲線表 |
+| 開發時間軸（17 commits） | `git log --reverse --date=short --pretty=format:"%h %ad %s"` |
