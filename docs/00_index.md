@@ -21,6 +21,7 @@
 | 12 | [../README.md](../README.md) | 12 | 可執行 MVP 的使用說明 |
 | 13 | [12_known_issues.md](12_known_issues.md) | — | 修正記錄、IL 準確率天花板與已知限制 |
 | 14 | [13_how_it_works.md](13_how_it_works.md) | — | **運作原理詳解**：IL 怎麼學、PPO 怎麼超越教師、七級難度保真度在量什麼 |
+| 15 | [portfolio/特殊選才_專題成果報告.md](portfolio/特殊選才_專題成果報告.md) | — | 備審資料用專題成果報告（同時可作為給 AI 協作者的專案說明） |
 
 ## 名詞表
 
